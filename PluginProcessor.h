@@ -1,14 +1,13 @@
 /*
   ==============================================================================
-
     This file contains the basic framework code for a JUCE plugin processor.
-
   ==============================================================================
 */
 
 #pragma once
 
 #include <JuceHeader.h>
+#include "MyParameters.h"
 using namespace juce;
 
 //==============================================================================
@@ -76,7 +75,7 @@ private:
     //
     dsp::ProcessorChain< dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>>, dsp::Reverb> fx;
 
-    
+    MyParameters fx_automation;
 
     // now you can process float arrays l & r thus:
     
