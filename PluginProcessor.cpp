@@ -6,6 +6,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <math.h>
 
 
 //==============================================================================
@@ -19,8 +20,17 @@ ImpressiveDropAudioProcessor::ImpressiveDropAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ), controlParam(*this, nullptr, "PARAMETERS", createParameters()) //Inicjalizacja controlParam
+                         
+
 #endif
 {
+
+    fx.get<0>().functionToUse = [](float x)
+    { //return jlimit(float(-0.1), float(0.1), x); 
+        return tanh(x);
+    };
+    fx.get<3>().setMode(dsp::LadderFilterMode::HPF24);
+    fx.get<3>().setEnabled(true);
     controlParam.state.addListener(this);//Dodanie listenera do controlparam
     
 }
@@ -235,13 +245,16 @@ void ImpressiveDropAudioProcessor::valueTreePropertyChanged(ValueTree& treeWhose
 void ImpressiveDropAudioProcessor::updatefx()
 {
 
-    fx.get<0>().state->type = dsp::StateVariableFilter::Parameters<float>::Type::lowPass; //Przypisanie że to jest lowPAssfilter
+   
+    fx.setBypassed<0>(true);
+    fx.get<1>().state->type = dsp::StateVariableFilter::Parameters<float>::Type::lowPass; //Przypisanie że to jest lowPAssfilter
     float control = controlParam.getRawParameterValue("EFFECT")->load();
 
     float array[100] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,390,391,392,393,394,395,396,397,398,399,400 };
     int control_0_place = floor(control * 100);
-    fx.get<0>().state->setCutOffFrequency(lastSampleRate, 50 * array[control_0_place], static_cast<float> (1.0 / MathConstants<double>::sqrt2));
+    fx.get<1>().state->setCutOffFrequency(lastSampleRate, 50 * array[control_0_place], static_cast<float> (1.0 / MathConstants<double>::sqrt2));
 
+    fx.setBypassed<1>(true);
     dsp::Reverb::Parameters reverbParameters;
     //float damping[100] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100 };
     int control_damping_place = floor(control * 100);
@@ -256,9 +269,13 @@ void ImpressiveDropAudioProcessor::updatefx()
     reverbParameters.roomSize = fx_automation.get_rvrb_RoomSize(control_damping_place) / 100;
 
 
-    fx.get<1>().setParameters(reverbParameters);
+    fx.get<2>().setParameters(reverbParameters);
 
+    fx.setBypassed<2>(true);
 
+    fx.get<3>().setCutoffFrequencyHz(1000);
+    fx.get<3>().setDrive(1);
+    fx.get<3>().setResonance(0);
 
 }
 

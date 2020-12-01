@@ -30,7 +30,7 @@ public:
         float angle = rotaryStartAngle + (sliderPos * (rotaryEndAngle - rotaryStartAngle));
         Rectangle<float> dialArea(rx, ry, diameter, diameter);
 
-        g.setColour(Colours::red);
+        g.setColour(Colours::yellow);
         
         g.fillEllipse(dialArea);
         g.setColour(Colours::black);

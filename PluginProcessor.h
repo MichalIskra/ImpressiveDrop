@@ -8,6 +8,7 @@
 
 #include <JuceHeader.h>
 #include "MyParameters.h"
+
 using namespace juce;
 
 //==============================================================================
@@ -61,6 +62,10 @@ public:
     ///==========================
     //void updateFilter();
     void updatefx();
+    void reset() noexcept
+    {
+        fx.reset();     // [3]
+    }
    
 private:
     AudioProcessorValueTreeState controlParam; // Struktura trzymajaca parametry 
@@ -69,11 +74,12 @@ private:
     std::atomic<bool> controlParamShouldUpdate = false; //Stworzenie kontrolki bool do wywoływania odpowiedniej reakcji na zmianę parametru pokrętła
     //==============================================================================
     //_______________________________FILTR___________________________________________________________________________________________
-    dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>> stateVariableFilter;
+    //dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>> stateVariableFilter;
     float lastSampleRate;//Zmienna potrzebna aby się odnieść w dsp  , dsp::DelayLine<float, dsp::DelayLineInterpolationTypes::Lagrange3rd>
 
+ 
     //
-    dsp::ProcessorChain< dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>>, dsp::Reverb> fx;
+    dsp::ProcessorChain<dsp::WaveShaper<float>, dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>>, dsp::Reverb, dsp::LadderFilter<float>> fx;
 
     MyParameters fx_automation;
 
