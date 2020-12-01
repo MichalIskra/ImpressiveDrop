@@ -57,11 +57,11 @@ public:
 
     ///========================== moje funkcje itd
     AudioProcessorValueTreeState& getControlParam() { return controlParam; } //funkcja zwracająca controlParam, które jest zmienną prywatną
-    float mGain{ 0.5 };//Zmienna póki co gain
-
+   
     ///==========================
-    //void updateFilter();
+   
     void updatefx();
+
     void reset() noexcept
     {
         fx.reset();     // [3]
@@ -76,10 +76,10 @@ private:
     //_______________________________FILTR___________________________________________________________________________________________
     //dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>> stateVariableFilter;
     float lastSampleRate;//Zmienna potrzebna aby się odnieść w dsp  , dsp::DelayLine<float, dsp::DelayLineInterpolationTypes::Lagrange3rd>
-
+    //dsp::ProcessorChain<dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>>, dsp::Reverb, dsp::LadderFilter<float>, dsp::WaveShaper<float>> fx;
  
     //
-    dsp::ProcessorChain<dsp::WaveShaper<float>, dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>>, dsp::Reverb, dsp::LadderFilter<float>> fx;
+    dsp::ProcessorChain<dsp::LadderFilter<float>,dsp::Chorus<float>, dsp::Reverb, dsp::WaveShaper<float, std::function<float(float)>>> fx;
 
     MyParameters fx_automation;
 

@@ -25,12 +25,25 @@ ImpressiveDropAudioProcessor::ImpressiveDropAudioProcessor()
 #endif
 {
 
-    fx.get<0>().functionToUse = [](float x)
-    { //return jlimit(float(-0.1), float(0.1), x); 
-        return tanh(x);
-    };
-    fx.get<3>().setMode(dsp::LadderFilterMode::HPF24);
-    fx.get<3>().setEnabled(true);
+    fx.get<0>().setMode(dsp::LadderFilterMode::HPF24);
+    fx.get<0>().setEnabled(true); //Zainicjalizowanie filtra górno przepustowego 24 db
+
+    fx.get<3>().functionToUse = [](float x)
+    {  
+        //return tanh(x);
+        float y;
+        if (x <= 0.3f) {
+            y = 2*x;
+        }
+        else if ((x <= 0.7f) && (x > 0.3f)) {
+            y = (3 - std::pow((2 - 3*x),2))/3;
+        }
+        else {
+            y = 1;
+        }
+        return y;
+    }; //Zainicjalizowanie funkcji do waveshapera
+   
     controlParam.state.addListener(this);//Dodanie listenera do controlparam
     
 }
@@ -115,9 +128,7 @@ void ImpressiveDropAudioProcessor::prepareToPlay (double sampleRate, int samples
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = getMainBusNumOutputChannels();
 
-   // stateVariableFilter.reset(); //gets outall garbage values
-   //updateFilter();
-   //stateVariableFilter.prepare(spec);
+   
 
     fx.reset();
     updatefx();
@@ -171,11 +182,9 @@ void ImpressiveDropAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    dsp::AudioBlock<float> block(buffer); //wedon't needto iteratethrou channels andblocks
-    //updateFilter();
+    dsp::AudioBlock<float> block(buffer); //we don't needto iterate throu channels andblocks
+    
     updatefx();
-
-    //stateVariableFilter.process(dsp::ProcessContextReplacing<float> (block));
     fx.process(dsp::ProcessContextReplacing<float>(block));
 
    
@@ -222,14 +231,14 @@ void ImpressiveDropAudioProcessor::setStateInformation (const void* data, int si
 AudioProcessorValueTreeState::ParameterLayout ImpressiveDropAudioProcessor::createParameters() {
     //Jest to funkcja której celem jest stworzenie vectora parametrów AudioValueTreeState
     std::vector<std::unique_ptr<RangedAudioParameter>> parameters;
-    parameters.push_back(std::make_unique<AudioParameterFloat>("EFFECT", "effect", 0.0f, 0.99f, 0.0f));
+    parameters.push_back(std::make_unique<AudioParameterFloat>("EFFECT", "effect", 0, 100, 0));
     return { parameters.begin(), parameters.end() };
 }
 
 void ImpressiveDropAudioProcessor::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) {
     //Jest to funkcja której celem jest zareagowanie na zmianê parametru pod³¹czonego do AudioValueTreeState
     controlParamShouldUpdate = true;
-    mGain = controlParam.getRawParameterValue("EFFECT")->load();
+    
 }
 
 /*void ImpressiveDropAudioProcessor::updateFilter() 
@@ -246,36 +255,44 @@ void ImpressiveDropAudioProcessor::updatefx()
 {
 
    
+   
+    
+    float control = controlParam.getRawParameterValue("EFFECT")->load(); //Załadowanie parametru z pokrętła
+
+    //===============FILTR==========================
     fx.setBypassed<0>(true);
-    fx.get<1>().state->type = dsp::StateVariableFilter::Parameters<float>::Type::lowPass; //Przypisanie że to jest lowPAssfilter
-    float control = controlParam.getRawParameterValue("EFFECT")->load();
-
-    float array[100] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,390,391,392,393,394,395,396,397,398,399,400 };
-    int control_0_place = floor(control * 100);
-    fx.get<1>().state->setCutOffFrequency(lastSampleRate, 50 * array[control_0_place], static_cast<float> (1.0 / MathConstants<double>::sqrt2));
-
+    fx.get<0>().setCutoffFrequencyHz(fx_automation.get_fltr_Frequency(control)*100);
+    fx.get<0>().setDrive(1);
+    fx.get<0>().setResonance(0);
+   
+    //=============DelayLine==========================
     fx.setBypassed<1>(true);
+    fx.get<1>().setRate(1);
+    fx.get<1>().setDepth(1);
+    fx.get<1>().setCentreDelay(50);
+    fx.get<1>().setFeedback(0.5);
+    fx.get<1>().setMix(0.5);
+  
+
+    //=============REVERB=============================
+    fx.setBypassed<2>(true);
     dsp::Reverb::Parameters reverbParameters;
-    //float damping[100] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100 };
-    int control_damping_place = floor(control * 100);
-    reverbParameters.damping = fx_automation.get_rvrb_Damping(control_damping_place)/1000;
-
-   // float dryLevel[100] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100 };
-    int control_dryLevel_place = floor(control * 100);
-    reverbParameters.dryLevel = abs(fx_automation.get_rvrb_DryLevel(control_damping_place)-100)/100*0.5;
-
-    //float roomSize[100] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100 };
-    int control_roomSize_place = floor(control * 100);
-    reverbParameters.roomSize = fx_automation.get_rvrb_RoomSize(control_damping_place) / 100;
-
+    
+    reverbParameters.damping = 0.7;
+    
+    reverbParameters.dryLevel = 0.2;
+    
+    reverbParameters.roomSize = fx_automation.get_rvrb_RoomSize(control) / 100;
 
     fx.get<2>().setParameters(reverbParameters);
 
-    fx.setBypassed<2>(true);
+    //==============Waveshaper======================
+    fx.setBypassed<3>(false);
+    
 
-    fx.get<3>().setCutoffFrequencyHz(1000);
-    fx.get<3>().setDrive(1);
-    fx.get<3>().setResonance(0);
+ 
+
+    
 
 }
 
