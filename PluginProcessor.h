@@ -73,17 +73,9 @@ private:
     void valueTreePropertyChanged(ValueTree &treeWhosePropertyHasChanged, const Identifier &property) override; //nadpisanie funkcji z ValueTree::Listener
     std::atomic<bool> controlParamShouldUpdate = false; //Stworzenie kontrolki bool do wywoływania odpowiedniej reakcji na zmianę parametru pokrętła
     //==============================================================================
-    //_______________________________FILTR___________________________________________________________________________________________
-    //dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>> stateVariableFilter;
-    float lastSampleRate;//Zmienna potrzebna aby się odnieść w dsp  , dsp::DelayLine<float, dsp::DelayLineInterpolationTypes::Lagrange3rd>
-    //dsp::ProcessorChain<dsp::ProcessorDuplicator<dsp::StateVariableFilter::Filter<float>, dsp::StateVariableFilter::Parameters<float>>, dsp::Reverb, dsp::LadderFilter<float>, dsp::WaveShaper<float>> fx;
- 
-    //
+    float lastSampleRate;//Zmienna potrzebna aby się odnieść w dsp  , dsp::DelayLine<float, dsp::DelayLineInterpolationTypes::Lagrange3rd>    
     dsp::ProcessorChain<dsp::LadderFilter<float>,dsp::Chorus<float>, dsp::Reverb, dsp::WaveShaper<float, std::function<float(float)>>> fx;
-
     MyParameters fx_automation;
-
-    // now you can process float arrays l & r thus:
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ImpressiveDropAudioProcessor)
 };

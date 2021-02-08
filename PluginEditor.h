@@ -28,9 +28,6 @@ public:
     void resized() override;
 
 private:
-    
-    
-    
 
     ImpressiveDropAudioProcessor& audioProcessor;
     MyRotarySlider controlKnob;//stworzenie pokretla, ale nie ma defaultowego konstruktora więc wczesniej zainicjowałem(lista inicjalizacyjna)

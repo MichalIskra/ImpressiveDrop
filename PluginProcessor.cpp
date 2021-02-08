@@ -30,13 +30,12 @@ ImpressiveDropAudioProcessor::ImpressiveDropAudioProcessor()
 
     fx.get<3>().functionToUse = [](float x)
     {  
-        //return tanh(x);
         float y;
-        if (x <= 0.3f) {
-            y = 2*x;
+        if (x <= 0.7f) {
+            y = x;
         }
-        else if ((x <= 0.7f) && (x > 0.3f)) {
-            y = (3 - std::pow((2 - 3*x),2))/3;
+        else if ((x <= 0.98f) && (x > 0.7f)) {
+            y = (3 - std::pow((2 - 3*(x-0.35f)),2))/3;
         }
         else {
             y = 1;
@@ -231,7 +230,7 @@ void ImpressiveDropAudioProcessor::setStateInformation (const void* data, int si
 AudioProcessorValueTreeState::ParameterLayout ImpressiveDropAudioProcessor::createParameters() {
     //Jest to funkcja której celem jest stworzenie vectora parametrów AudioValueTreeState
     std::vector<std::unique_ptr<RangedAudioParameter>> parameters;
-    parameters.push_back(std::make_unique<AudioParameterFloat>("EFFECT", "effect", 0, 100, 0));
+    parameters.push_back(std::make_unique<AudioParameterFloat>("EFFECT", "effect", 0, 999, 0));
     return { parameters.begin(), parameters.end() };
 }
 
@@ -253,42 +252,39 @@ void ImpressiveDropAudioProcessor::valueTreePropertyChanged(ValueTree& treeWhose
 
 void ImpressiveDropAudioProcessor::updatefx()
 {
-
-   
-   
-    
-    float control = controlParam.getRawParameterValue("EFFECT")->load(); //Załadowanie parametru z pokrętła
-
+ 
+    float control_1 = controlParam.getRawParameterValue("EFFECT")->load(); //Załadowanie parametru z pokrętła
+    int control = floor(control_1);
     //===============FILTR==========================
-    fx.setBypassed<0>(true);
-    fx.get<0>().setCutoffFrequencyHz(fx_automation.get_fltr_Frequency(control)*100);
-    fx.get<0>().setDrive(1);
-    fx.get<0>().setResonance(0);
-   
-    //=============DelayLine==========================
-    fx.setBypassed<1>(true);
-    fx.get<1>().setRate(1);
-    fx.get<1>().setDepth(1);
-    fx.get<1>().setCentreDelay(50);
-    fx.get<1>().setFeedback(0.5);
-    fx.get<1>().setMix(0.5);
+    fx.setBypassed<0>(false);
+
+    fx.get<0>().setCutoffFrequencyHz(fx_automation.get_fltr_Frequency(control));
+    fx.get<0>().setDrive(fx_automation.get_fltr_Drive(control));
+    fx.get<0>().setResonance(fx_automation.get_fltr_Resonance(control));
+
+    //=============Chorus==========================
+    fx.setBypassed<1>(false);
+
+    fx.get<1>().setRate(fx_automation.get_chrs_Rate(control));
+    fx.get<1>().setDepth(fx_automation.get_chrs_Depth(control));
+    fx.get<1>().setCentreDelay(fx_automation.get_chrs_CentreDelay(control));
+    fx.get<1>().setFeedback(fx_automation.get_chrs_Feedback(control));
+    fx.get<1>().setMix(fx_automation.get_chrs_Mix(control));
   
 
     //=============REVERB=============================
-    fx.setBypassed<2>(true);
+    fx.setBypassed<2>(false);
+
     dsp::Reverb::Parameters reverbParameters;
-    
-    reverbParameters.damping = 0.7;
-    
-    reverbParameters.dryLevel = 0.2;
-    
-    reverbParameters.roomSize = fx_automation.get_rvrb_RoomSize(control) / 100;
-
+    reverbParameters.damping = fx_automation.get_rvrb_Damping(control);
+    reverbParameters.dryLevel = fx_automation.get_rvrb_DryLevel(floor(control/10));//Tablica Dry ma 100 elementów
+    reverbParameters.wetLevel = fx_automation.get_rvrb_WetLevel(floor(control/10));//TablicaWet ma  100 elementów
+    reverbParameters.roomSize = fx_automation.get_rvrb_RoomSize(control);
+    reverbParameters.width = fx_automation.get_rvrb_Width(control);
     fx.get<2>().setParameters(reverbParameters);
-
     //==============Waveshaper======================
-    fx.setBypassed<3>(false);
-    
+    fx.setBypassed<3>(true);
+   
 
  
 
